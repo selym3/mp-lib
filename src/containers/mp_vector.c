@@ -9,6 +9,9 @@ mp_vector mpv_create()
     return out;
 }
 
+int mpv_is_empty(mp_vector * v) {return v->length <= 0;}
+int mpv_is_valid(mp_vector * v) {return v->array != NULL; }
+
 void mpv_resize(mp_vector *v, size_t new_capacity)
 {
     value_t *new_array = calloc(new_capacity, sizeof(value_t));
@@ -26,10 +29,7 @@ void mpv_resize(mp_vector *v, size_t new_capacity)
 void mpv_clear(mp_vector *v)
 {
     value_t r = {0}; // get zeroed value
-    for (; v->length > 0; v->array[--v->length] = r)
-    {
-    }
-    ++v->length; // length is back to zero
+    for (; v->length > 0; v->array[--v->length] = r);
 }
 
 void mpv_free(mp_vector *v)
@@ -53,7 +53,7 @@ value_t mpv_pop_back(mp_vector *v)
     {
         value_t * loc = v->array + (--v->length);
         value_t out = *loc;
-        *loc = (value_t){ 0 }; // this isn't techincally necessary
+        *loc = (value_t){ 0 }; // zero out value
         return out;
     }
 
