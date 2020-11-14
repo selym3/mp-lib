@@ -1,0 +1,7 @@
+# Python compilation manager
+qtclang.py
+
+# test and compilation
+main
+main.c
+bin/
