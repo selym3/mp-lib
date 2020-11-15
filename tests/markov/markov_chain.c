@@ -25,7 +25,6 @@ IDX_LETTER(int idx)
     return LETTERS[idx];
 }
 
-#include "frand.h"
 char
 getNext(probs * a)
 {
@@ -45,7 +44,6 @@ getNext(probs * a)
     return IDX_LETTER(0);
 }
 
-#include "murmur.h"
 hash_t
 sstringHash(const sstring * a)
 {

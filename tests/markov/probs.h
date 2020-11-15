@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-const static size_t PAST_CHARS = 5;
+const static size_t PAST_CHARS = 3;
 
 typedef struct {
     int probs[31];
