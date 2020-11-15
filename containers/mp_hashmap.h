@@ -88,6 +88,10 @@ int mphm_contains_value(mp_hashmap *, value_t);
 
 /*
 Puts a value in a given key. 
+
+This is the only function that allows the addition
+of key value pairs.
+
 Returns 1 if the key had not been present.
 */
 int mphm_put(mp_hashmap *, key_t, value_t);
@@ -107,5 +111,13 @@ of pairs that were removed otherwise.
 */
 int mphm_remove_value(mp_hashmap *, value_t);
 
+/*
+Given a map and a new bucket count, setup the buckets
+based on the given map's current key, value pairs.
+
+The given map's current data will be freed and replaced
+with the new length, used & total buckets, and bucket array.
+*/
+void mphm_resize(mp_hashmap *, size_t);
 
 #endif
