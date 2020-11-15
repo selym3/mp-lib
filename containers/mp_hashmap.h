@@ -2,25 +2,30 @@
 #define __MP_HASHMAP__
 
 #include <stddef.h>
+#include <stdint.h>
 
-typedef long long hash_t;
+/*
+PROBLEM:
+    * The hashmap does not own the items added to it
+    * When using put(...), the key and the value should be copied and pointers to that 
+      should be stored in the linked list. When clearing, these pointers should be freed.
+    * This allows types like 'char *' to be safely added and freed 
+*/
+
+typedef uint64_t hash_t;
 
 // must be a power of 2
 #define __MP_HASHMAP_DEFAULT_BUCKETS__ (16)
-#define __MP_HASHMAP_DEFAULT_BUCKET_LOAD__ (0.75)
+#define __MP_HASHMAP_DEFAULT_BUCKET_LOAD__ (0.90)
 
-/*
-TODO: add necessary function pointers to add all needed operations
-to key_t and value_t (namely equals for key and value)
-*/
-typedef int key_t;
+typedef char * mkey_t;
 typedef int value_t;
 
 typedef struct __MP_HASHMAP_NODE__ 
 {
     struct __MP_HASHMAP_NODE__ * next;
     
-    key_t key;
+    mkey_t key;
     value_t value;
 
 } mp_hashmap_node;
@@ -50,13 +55,24 @@ typedef struct __MP_HASHMAP__
     size_t length;
 
     // Hash function
-    hash_t (*to_hash)(key_t);
+    hash_t (*to_hash)(const mkey_t *);
+
+    // Key Equals
+    int (*key_equals)(const mkey_t *, const mkey_t *);
+
+    // Value Equals
+    int (*value_equals)(const value_t *, const value_t *);
+
 } mp_hashmap;
 
 /* 
 Create a hashmap given a hashing function for key type.
 */
-mp_hashmap mphm_create(hash_t (*to_hash)(key_t));
+mp_hashmap mphm_create(
+    hash_t (*to_hash)(const mkey_t *),
+    int (*key_equals)(const mkey_t *, const mkey_t *),
+    int (*value_equals)(const value_t *, const value_t *)
+);
 
 // Returns if a hasmap is empty (has any elements)
 int mphm_is_empty(mp_hashmap *);
@@ -74,12 +90,12 @@ void mphm_free(mp_hashmap *);
 Get a pointer to a value for a given key.
 NULL if key not present
 */
-value_t * mphm_get(mp_hashmap *, key_t);
+value_t * mphm_get(mp_hashmap *, mkey_t);
 
 /*
 Check if a hashmap contains a key.
 */
-int mphm_contains(mp_hashmap *, key_t);
+int mphm_contains(mp_hashmap *, mkey_t);
 
 /*
 Check if a hashmap contains a value.
@@ -94,14 +110,14 @@ of key value pairs.
 
 Returns 1 if the key had not been present.
 */
-int mphm_put(mp_hashmap *, key_t, value_t);
+int mphm_put(mp_hashmap *, mkey_t, value_t);
 
 /*
 Removes a key, value pair based on its key.
 
 Returns 1 if the key was present and was removed
 */
-int mphm_remove(mp_hashmap *, key_t);
+int mphm_remove(mp_hashmap *, mkey_t);
 
 /*
 Removes key value pairs based on their values.
