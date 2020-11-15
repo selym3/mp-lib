@@ -5,3 +5,4 @@ qtclang.py
 main
 main.c
 bin/
+.vscode/
