@@ -53,17 +53,9 @@ void mphm_free(mp_hashmap * map)
     map->total_buckets = 0;
 }
 
-static inline int is_power_of_2(hash_t a){return (a>0 && !(a & (a-1)));}
-
 static inline int get_index(mp_hashmap * map, mkey_t key)
 {
-    hash_t hash = map->to_hash(&key);
-
-    // If somebody messed up the resizing on their own
-    if (is_power_of_2(map->total_buckets))
-        return hash & (map->total_buckets-1);
-    else
-        return hash % map->total_buckets;
+    return map->to_hash(&key) % map->total_buckets;
 }
 
 static mp_hashmap_node * create_node(mp_hashmap_node * next, mkey_t key, value_t value)
