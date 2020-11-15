@@ -10,24 +10,22 @@
  */
 
 #define _GNU_SOURCE
-#include "../containers/mp_hashmap.h"
+#include "../../containers/mp_hashmap.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 hash_t
 strhash(char * const * input)
 {
     hash_t out = 0;
     hash_t n = 1;
-    for (char * tmp = (char *)*input; *tmp; ++tmp)
-    {
+    for (char * tmp = (char *)*input; *tmp; ++tmp) {
         out += (*tmp * n);
         n*=31;
     }
     return out;
 }
-
-#include <string.h>
 
 int 
 strequals(char * const *a, char *const *b)
@@ -64,11 +62,9 @@ compressFile(FILE * file)
 void
 printMap(mp_hashmap * map, FILE * file)
 {
-    for (int i = 0; i < map->total_buckets; ++i)
-    {
+    for (int i = 0; i < map->total_buckets; ++i) {
         mp_hashmap_node * tmp = map->buckets[i];
-        while (tmp)
-        {
+        while (tmp) {
             char * t = tmp->key;
             while (*++t); 
             *--t = '\0';
@@ -83,13 +79,11 @@ void
 printBuckets(mp_hashmap * map, FILE * file)
 {
     fprintf(file, "{\n");
-    for (int i = 0; i < map->total_buckets; ++i)
-    {
+    for (int i = 0; i < map->total_buckets; ++i) {
         fprintf(file, "\tbucket-%i {\n", i);
 
         mp_hashmap_node * tmp = map->buckets[i];
-        while (tmp)
-        {
+        while (tmp) {
             char * t = tmp->key;
             while (*++t); 
             *--t = '\0';
@@ -106,12 +100,10 @@ printBuckets(mp_hashmap * map, FILE * file)
 void 
 freeMap(mp_hashmap * map)
 {
-    for (int i = 0; i < map->total_buckets; ++i)
-    {
+    for (int i = 0; i < map->total_buckets; ++i) {
         mp_hashmap_node * top = map->buckets[i];
         
-        while (top)
-        {
+        while (top) {
             free(top->key);
          
             top->key = NULL;
