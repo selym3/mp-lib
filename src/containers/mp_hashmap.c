@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-mp_hashmap mphmp_create(hash_t (*to_hash)(key_t))
+mp_hashmap mphm_create(hash_t (*to_hash)(key_t))
 {
     mp_hashmap out = { 
         NULL, // bucket list
@@ -18,17 +18,10 @@ mp_hashmap mphmp_create(hash_t (*to_hash)(key_t))
     out.buckets = new_buckets;
 
     return out;
-
-
 }
 
 int mphm_is_empty(mp_hashmap * map) { return map->length <= 0; }
 int mphm_is_valid(mp_hashmap * map) { return map->buckets != NULL; }
-
-static inline int get_index(mp_hashmap * map, key_t key)
-{
-    return map->to_hash(key) & (map->total_buckets-1);
-}
 
 void mphm_clear(mp_hashmap * map)
 {
@@ -54,6 +47,19 @@ void mphm_free(mp_hashmap * map)
     map->total_buckets = 0;
 }
 
+static inline int is_power_of_2(unsigned int a){return (a!=0 && !(a & (a-1)));}
+
+static inline int get_index(mp_hashmap * map, key_t key)
+{
+    hash_t hash = map->to_hash(key);
+
+    // If somebody messed up the resizing on their own
+    if (is_power_of_2(map->total_buckets))
+        return hash & (map->total_buckets-1);
+    else
+        return hash % map->total_buckets;
+}
+
 static mp_hashmap_node * create_node(mp_hashmap_node * next, key_t key, value_t value)
 {
     mp_hashmap_node * node = malloc(sizeof(mp_hashmap_node));
@@ -63,8 +69,47 @@ static mp_hashmap_node * create_node(mp_hashmap_node * next, key_t key, value_t 
     return node;
 }  
 
-int mphmp_put(mp_hashmap * map, key_t key, value_t value)
+void mphm_resize(mp_hashmap * map, size_t buckets)
 {
+    if (buckets <= 1)
+        return;
+
+    // there is probably an optimized version of this because the total buckets
+    // is always a power of 2
+
+    mp_hashmap_node ** new_buckets = calloc(buckets, sizeof(mp_hashmap_node *));
+    int used_buckets = 0;
+    int length = 0;
+
+    for (int i = 0; i < map->total_buckets; ++i)
+    {
+        mp_hashmap_node * top = map->buckets[i];
+
+        while (top)
+        {
+            // index in the new map we're creating
+            const int o_index = map->to_hash(top->key) & (buckets-1);
+            used_buckets += (!new_buckets[o_index]);
+            mp_hashmap_node * o_next = create_node(new_buckets[o_index], top->key, top->value);
+            new_buckets[o_index] = o_next;
+            ++length;
+            top = top->next;
+        }
+    }
+
+    mphm_free(map);
+
+    map->buckets = new_buckets;
+    map->total_buckets = buckets;
+    map->length = length;
+    map->used_buckets = used_buckets;
+}
+
+int mphm_put(mp_hashmap * map, key_t key, value_t value)
+{
+    if ((float)(map->used_buckets/map->total_buckets) >= map->max_bucket_load)
+        mphm_resize(map, map->total_buckets * 2);
+
     const int index = get_index(map, key);
     ++map->length;
     mp_hashmap_node * top = map->buckets[index];
@@ -88,7 +133,7 @@ int mphmp_put(mp_hashmap * map, key_t key, value_t value)
 
 value_t * mphm_get(mp_hashmap * map, key_t key)
 {
-    const index = get_index(map, key);
+    const int index = get_index(map, key);
     mp_hashmap_node * top = map->buckets[index];
     while (top)
     {
@@ -120,7 +165,7 @@ int mphm_contains_value(mp_hashmap * map, value_t value)
 
 int mphm_remove(mp_hashmap * map, key_t key)
 {
-    const index = get_index(map, key);
+    const int index = get_index(map, key);
     mp_hashmap_node * top = map->buckets[index];
     mp_hashmap_node * before = NULL;
     while (top)
@@ -159,7 +204,8 @@ int mphm_remove_value(mp_hashmap * map, value_t value)
     int old_length = map->length;
 
     for (int i = 0; i < map->total_buckets; ++i)
-    {
+    {   
+        mp_hashmap_node * top_copy = map->buckets[i];
         mp_hashmap_node * top = map->buckets[i];
         mp_hashmap_node * before = NULL;
         while (top)
@@ -183,7 +229,7 @@ int mphm_remove_value(mp_hashmap * map, value_t value)
             top = next;
         }
 
-        if (!map->buckets[i])
+        if (top_copy && !map->buckets[i])
             --map->used_buckets;
     }
 
